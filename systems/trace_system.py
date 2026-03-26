@@ -1,3 +1,5 @@
+from ui.ui_manager import UIManager
+
 class TraceSystem:
     def __init__(self):
         self.level = 0
@@ -7,7 +9,7 @@ class TraceSystem:
     def increase(self, amount):
         actual_amount = int(amount * self.stealth_multiplier)
         self.level += actual_amount
-        print(f"[!] TRACE 증가: +{actual_amount}% (현재: {self.level}%)")
+        UIManager.show_warning(f"TRACE 증가: +{actual_amount}% (현재: {self.level}%)")
 
     def is_detected(self):
         return self.level >= self.limit

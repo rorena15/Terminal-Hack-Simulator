@@ -3,6 +3,7 @@ from core.player import Player
 from core.target import Target
 from core.contract import Contract
 from systems.shop_system import ShopSystem
+from ui.ui_manager import UIManager
 from commands import scan, enum, exploit, bruteforce, zero_day, privesc
 
 class GameEngine:
@@ -30,18 +31,18 @@ class GameEngine:
         }
 
     def _abort_contract(self, player, target, args):
-        print("[-] 계약을 포기하고 안전하게 연결을 끊습니다.")
+        UIManager.show_error("계약을 포기하고 안전하게 연결을 끊습니다.")
         return "abort"
 
     def run(self):
-        print("=== Terminal Hack Simulator : CONTRACTS ===")
+        UIManager.type_text("=== Terminal Hack Simulator : CONTRACTS ===", delay=0.03)
         while True:
             self._hub_loop()
 
     def _hub_loop(self):
-        print(f"\n[HUB] LV.{self.player.level} | MONEY: ${self.player.money} | EXP: {self.player.exp}")
-        print("명령어: shop, buy [item], board, accept [id], info, exit")
-        cmd_input = input("hub> ").strip().split()
+        UIManager.show_hud_hub(self.player)
+        UIManager.show_info("명령어: shop, buy [item], board, accept [id], info, exit")
+        cmd_input = UIManager.get_input("hub")
         
         if not cmd_input:
             return
@@ -53,38 +54,37 @@ class GameEngine:
         elif cmd == "buy" and args:
             self.shop.buy(self.player, args[0])
         elif cmd == "board":
-            print("\n=== CONTRACT BOARD ===")
-            for c_id, c in self.contracts.items():
-                status = "[CLEARED]" if c.cleared else "[OPEN]"
-                print(f"{c_id}. {status} [SEC {c.sec_level}] {c.title} (Reward: ${c.reward} / Penalty: -${c.penalty})")
+            headers = ["ID", "STATUS", "SEC", "TITLE", "REWARD", "PENALTY"]
+            rows = [[c_id, "[CLEARED]" if c.cleared else "[OPEN]", f"SEC {c.sec_level}", c.title, f"${c.reward}", f"-${c.penalty}"] for c_id, c in self.contracts.items()]
+            UIManager.draw_table("CONTRACT BOARD", headers, rows)
         elif cmd == "accept" and args:
             try:
                 c_id = int(args[0])
                 if c_id in self.contracts and not self.contracts[c_id].cleared:
                     self._contract_loop(self.contracts[c_id])
                 else:
-                    print("[-] 유효하지 않거나 이미 완료된 계약입니다.")
+                    UIManager.show_error("유효하지 않거나 이미 완료된 계약입니다.")
             except ValueError:
-                print("[-] 계약 ID를 숫자로 입력하세요.")
+                UIManager.show_error("계약 ID를 숫자로 입력하세요.")
         elif cmd == "info":
-            print(f"Inventory: {', '.join(self.player.inventory) if self.player.inventory else 'Empty'}")
+            inv_str = ', '.join(self.player.inventory) if self.player.inventory else 'Empty'
+            UIManager.show_info(f"Inventory: {inv_str}")
         elif cmd == "exit":
             sys.exit()
 
     def _contract_loop(self, contract):
         self.player.reset_contract_state()
         target = contract.target
-        print(f"\n[ CONTRACT START: {contract.title} | SEC LEVEL: {contract.sec_level} ]")
+        UIManager.show_action(f"CONTRACT START: {contract.title} | SEC LEVEL: {contract.sec_level}")
 
         while self.player.access_level != "root":
             if self.player.trace.is_detected():
-                print("\n[!!!] 보안 시스템에 탐지되었습니다. 강제 연결 해제.")
-                print("=== MISSION FAILED ===")
+                UIManager.show_game_over(contract.penalty)
                 self.player.apply_penalty(contract.penalty)
                 return
 
-            print(f"\nTARGET: {target.ip} | LEVEL: {self.player.access_level.upper()} | TRACE: {self.player.trace.level}%")
-            cmd_input = input("root@kali:~# ").strip().split()
+            UIManager.show_hud_mission(self.player, target.ip)
+            cmd_input = UIManager.get_input("mission", self.player.access_level, target.ip)
             
             if not cmd_input:
                 continue
@@ -95,11 +95,11 @@ class GameEngine:
                 if result == "abort":
                     return
             elif cmd == "help":
-                print("명령어: scan, enum [port], exploit [service], bruteforce [service], zero_day [service], privesc, logs, abort")
+                UIManager.show_info("명령어: scan, enum [port], exploit [service], bruteforce [service], zero_day [service], privesc, logs, abort")
             else:
-                print("[-] 알 수 없는 명령어입니다.")
+                UIManager.show_error("알 수 없는 명령어입니다.")
 
-        print(f"\n[+] 계약 완료! 타겟 시스템을 장악했습니다.")
-        print(f"[+] 보상 획득: ${contract.reward}, EXP: {contract.reward}")
+        UIManager.show_success("계약 완료! 타겟 시스템을 장악했습니다.")
+        UIManager.show_success(f"보상 획득: ${contract.reward}, EXP: {contract.reward}")
         self.player.add_reward(contract.reward, contract.reward)
         contract.cleared = True
