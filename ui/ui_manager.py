@@ -1,6 +1,10 @@
 import sys
 import time
 import pygame
+import os
+
+if os.name == 'nt':
+    os.system('')
 
 class Colors:
     CYAN = (0, 255, 255)
@@ -28,8 +32,11 @@ class UIManager:
             pygame.init()
             cls._screen = pygame.display.set_mode((1024, 768))
             pygame.display.set_caption("Terminal Hack Simulator OS")
-            # 고정폭 폰트 적용 (터미널 정렬 필수)
-            cls._font = pygame.font.SysFont('consolas, courier, monospace', 18, bold=True)
+            
+            # 한글 지원 폰트 리스트 (Windows: 맑은 고딕, Mac: 애플 고딕, Linux: 나눔 고딕)
+            font_preferences = ['malgungothic', 'applegothic', 'nanumgothic', 'consolas']
+            cls._font = pygame.font.SysFont(font_preferences, 18, bold=True)
+            
             cls._clock = pygame.time.Clock()
 
     @classmethod
@@ -44,7 +51,7 @@ class UIManager:
             cls._draw_screen()
             if delay > 0:
                 pygame.time.wait(int(delay * 1000))
-                pygame.event.pump() # 타이핑 중 이벤트 응답 유지
+                pygame.event.pump()
 
     @classmethod
     def show_hud_hub(cls, player):
@@ -109,7 +116,6 @@ class UIManager:
                     sys.exit()
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_RETURN:
-                        # 명령어 입력 완료 시 화면에 에코 출력 후 값 반환
                         cls._lines.append((cls._prompt + cls._input_text, prompt_color))
                         ret = cls._input_text.strip().split()
                         
@@ -131,7 +137,6 @@ class UIManager:
     def _draw_screen(cls, prompt_color=Colors.GREEN):
         cls._screen.fill(Colors.BLACK)
         
-        # 1. 상단 HUD 영역 렌더링
         pygame.draw.rect(cls._screen, Colors.HUD_BG, (0, 0, 1024, 50))
         pygame.draw.line(cls._screen, Colors.CYAN, (0, 50), (1024, 50), 2)
         
@@ -139,7 +144,6 @@ class UIManager:
             hud_surface = cls._font.render(cls._hud_info, True, cls._hud_color)
             cls._screen.blit(hud_surface, (20, 15))
 
-        # 2. 터미널 로그 라인 렌더링 (최대 줄 수 유지)
         y_offset = 70
         display_lines = cls._lines[-cls._max_lines:]
         for text, color in display_lines:
@@ -147,7 +151,6 @@ class UIManager:
             cls._screen.blit(text_surface, (20, y_offset))
             y_offset += 22
             
-        # 3. 입력 프롬프트 및 깜빡이는 커서 렌더링
         cursor = "_" if time.time() % 1 > 0.5 else ""
         input_surface = cls._font.render(cls._prompt + cls._input_text + cursor, True, prompt_color)
         cls._screen.blit(input_surface, (20, y_offset))
