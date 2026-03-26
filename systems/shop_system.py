@@ -2,8 +2,10 @@ class ShopSystem:
     def __init__(self):
         self.items = {
             "hydra": {"price": 500, "desc": "bruteforce 공격 도구"},
-            "metasploit": {"price": 1000, "desc": "exploit 공격 도구"},
-            "stealth": {"price": 2000, "desc": "모든 행동의 TRACE 증가량 50% 감소"}
+            "metasploit": {"price": 1200, "desc": "exploit 공격 도구"},
+            "stealth": {"price": 2000, "desc": "TRACE 증가량 30% 감소"},
+            "stealth_pro": {"price": 5000, "desc": "TRACE 증가량 60% 감소 (stealth 대체)"},
+            "zero_day": {"price": 10000, "desc": "SEC 4 전용 치명적 취약점 익스플로잇"}
         }
 
     def show(self):
